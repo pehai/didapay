@@ -6,17 +6,18 @@
 <title>NFC 卡片餘額系統</title>
 <style>
   :root{
-    --bg:#0f172a;
-    --bg2:#111827;
-    --card:#1e293b;
-    --card-border:#334155;
-    --text:#f1f5f9;
-    --text-dim:#94a3b8;
-    --accent:#22d3ee;
-    --accent2:#38bdf8;
+    --bg:#111321;          /* 深夜藍黑 */
+    --bg2:#1B1D31;         /* 深靛灰 */
+    --card:#1B1D31;        /* 深靛灰 */
+    --card-border:rgba(104,96,168,.35); /* 幻霧紫 tint */
+    --text:#EDECF4;        /* 冷白 */
+    --text-dim:#AAA8BD;    /* 灰紫 */
+    --accent:#3D3A8F;      /* 骸式靛藍 Primary */
+    --accent2:#6860A8;     /* 幻霧紫 Secondary */
     --green:#34d399;
-    --red:#f87171;
+    --red:#B8324A;         /* 輪迴猩紅 Accent */
     --yellow:#fbbf24;
+    --bg-light:#F2F1F7;    /* 霧白 (reserved for a future light mode) */
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -46,7 +47,7 @@
   .scan-zone{
     margin-top:12px;
     border-radius:24px;
-    background:radial-gradient(circle at 50% 20%, #1e3a4f, var(--card) 70%);
+    background:radial-gradient(circle at 50% 20%, rgba(104,96,168,.35) 0%, rgba(61,58,143,.35) 45%, var(--card) 75%);
     border:1px solid var(--card-border);
     padding:36px 20px;
     text-align:center;
@@ -55,7 +56,7 @@
     width:96px;height:96px;margin:0 auto 16px;
     display:flex;align-items:center;justify-content:center;
     border-radius:50%;
-    background:rgba(34,211,238,.08);
+    background:rgba(61,58,143,.18);
     position:relative;
   }
   .nfc-icon svg{width:48px;height:48px;color:var(--accent);}
@@ -74,12 +75,12 @@
     appearance:none;border:none;cursor:pointer;
     font-size:16px;font-weight:600;
     padding:14px 20px;border-radius:14px;
-    background:var(--accent);color:#04222b;
+    background:var(--accent);color:var(--text);
     width:100%;
   }
   .btn:active{transform:scale(.98);}
   .btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--card-border);}
-  .btn.danger{background:var(--red);color:#2b0a0a;}
+  .btn.danger{background:var(--red);color:var(--text);}
   .btn.green{background:var(--green);color:#04240f;}
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--card-border);}
   .btn:disabled{opacity:.5;}
@@ -88,8 +89,8 @@
 
   .unsupported{
     margin-top:14px;padding:14px 16px;border-radius:14px;
-    background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);
-    color:#fecaca;font-size:14px;line-height:1.6;
+    background:rgba(184,50,74,.12);border:1px solid rgba(184,50,74,.35);
+    color:#f3c7d0;font-size:14px;line-height:1.6;
   }
   .unsupported code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;}
 
@@ -395,7 +396,7 @@
 
   // ---------- Web NFC support check ----------
   var supported = "NDEFReader" in window;
-  document.getElementById("supportDot").style.background = supported ? "#34d399" : "#f87171";
+  document.getElementById("supportDot").style.background = supported ? "#34d399" : "#B8324A";
   if(!supported){
     document.getElementById("unsupportedBox").style.display = "block";
     document.getElementById("scanBtn").disabled = true;

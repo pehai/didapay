@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NFC 卡片餘額系統</title>
+<style>
+  :root{
+    --bg:#0f172a;
+    --bg2:#111827;
+    --card:#1e293b;
+    --card-border:#334155;
+    --text:#f1f5f9;
+    --text-dim:#94a3b8;
+    --accent:#22d3ee;
+    --accent2:#38bdf8;
+    --green:#34d399;
+    --red:#f87171;
+    --yellow:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC",sans-serif;
+    min-height:100vh;
+    padding-bottom:76px;
+  }
+  header{
+    padding:20px 20px 12px;
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg,var(--bg) 70%, transparent);
+  }
+  header h1{
+    font-size:20px; margin:0; font-weight:700;
+    display:flex; align-items:center; gap:8px;
+  }
+  header h1 .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+  main{padding:0 16px; max-width:520px; margin:0 auto;}
+
+  .tabpage{display:none;}
+  .tabpage.active{display:block;}
+
+  /* ---- Scan tab ---- */
+  .scan-zone{
+    margin-top:12px;
+    border-radius:24px;
+    background:radial-gradient(circle at 50% 20%, #1e3a4f, var(--card) 70%);
+    border:1px solid var(--card-border);
+    padding:36px 20px;
+    text-align:center;
+  }
+  .nfc-icon{
+    width:96px;height:96px;margin:0 auto 16px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    background:rgba(34,211,238,.08);
+    position:relative;
+  }
+  .nfc-icon svg{width:48px;height:48px;color:var(--accent);}
+  .pulse{
+    position:absolute;inset:0;border-radius:50%;
+    border:2px solid var(--accent);
+    opacity:0; animation:none;
+  }
+  .scanning .pulse{animation:pulse 1.6s ease-out infinite;}
+  @keyframes pulse{
+    0%{opacity:.7;transform:scale(1);}
+    100%{opacity:0;transform:scale(1.8);}
+  }
+  .scan-status{font-size:15px;color:var(--text-dim);margin-bottom:20px;min-height:20px;}
+  .btn{
+    appearance:none;border:none;cursor:pointer;
+    font-size:16px;font-weight:600;
+    padding:14px 20px;border-radius:14px;
+    background:var(--accent);color:#04222b;
+    width:100%;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--card-border);}
+  .btn.danger{background:var(--red);color:#2b0a0a;}
+  .btn.green{background:var(--green);color:#04240f;}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--card-border);}
+  .btn:disabled{opacity:.5;}
+  .row-btns{display:flex;gap:10px;margin-top:14px;}
+  .row-btns .btn{flex:1;}
+
+  .unsupported{
+    margin-top:14px;padding:14px 16px;border-radius:14px;
+    background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);
+    color:#fecaca;font-size:14px;line-height:1.6;
+  }
+  .unsupported code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;}
+
+  /* ---- Card detail ---- */
+  .card-detail{
+    margin-top:16px;border-radius:20px;
+    background:var(--card);border:1px solid var(--card-border);
+    padding:20px;
+  }
+  .card-detail .cid{font-size:12px;color:var(--text-dim);font-family:monospace;word-break:break-all;}
+  .card-detail .cname{font-size:18px;font-weight:700;margin:4px 0 14px;}
+  .balance-big{font-size:40px;font-weight:800;color:var(--accent);margin:6px 0 16px;}
+  .balance-big span{font-size:16px;color:var(--text-dim);font-weight:500;}
+
+  .history{margin-top:16px;}
+  .history h3{font-size:14px;color:var(--text-dim);margin:0 0 8px;font-weight:600;}
+  .tx{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--card-border);
+    font-size:14px;
+  }
+  .tx:last-child{border-bottom:none;}
+  .tx .meta{color:var(--text-dim);font-size:12px;}
+  .tx .amt.plus{color:var(--green);font-weight:700;}
+  .tx .amt.minus{color:var(--red);font-weight:700;}
+  .empty{color:var(--text-dim);font-size:14px;text-align:center;padding:20px 0;}
+
+  /* ---- List tab ---- */
+  .search{
+    width:100%;padding:12px 14px;border-radius:12px;
+    background:var(--card);border:1px solid var(--card-border);
+    color:var(--text);font-size:15px;margin:12px 0;
+  }
+  .card-item{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--card);border:1px solid var(--card-border);
+    border-radius:16px;padding:14px 16px;margin-bottom:10px;
+    cursor:pointer;
+  }
+  .card-item .l .name{font-weight:600;font-size:15px;}
+  .card-item .l .id{font-size:11px;color:var(--text-dim);font-family:monospace;}
+  .card-item .r{font-weight:700;color:var(--accent);font-size:17px;}
+
+  /* ---- Bottom nav ---- */
+  nav.tabbar{
+    position:fixed;bottom:0;left:0;right:0;
+    display:flex;background:var(--bg2);
+    border-top:1px solid var(--card-border);
+    padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+    z-index:20;
+  }
+  nav.tabbar button{
+    flex:1;background:none;border:none;color:var(--text-dim);
+    font-size:12px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:4px;
+  }
+  nav.tabbar button.active{color:var(--accent);}
+  nav.tabbar svg{width:22px;height:22px;}
+
+  /* ---- Modal ---- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);
+    display:none;align-items:flex-end;justify-content:center;z-index:30;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--bg2);width:100%;max-width:520px;
+    border-radius:20px 20px 0 0;padding:20px;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  }
+  .modal h2{margin:0 0 14px;font-size:17px;}
+  .modal input{
+    width:100%;padding:14px;border-radius:12px;
+    background:var(--card);border:1px solid var(--card-border);
+    color:var(--text);font-size:18px;margin-bottom:12px;
+  }
+  .modal label{font-size:13px;color:var(--text-dim);display:block;margin-bottom:6px;}
+  .quick-amts{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .quick-amts button{
+    background:var(--card);border:1px solid var(--card-border);color:var(--text);
+    padding:8px 14px;border-radius:10px;font-size:14px;
+  }
+
+  .toast{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    background:var(--card);border:1px solid var(--card-border);
+    padding:10px 18px;border-radius:12px;font-size:14px;
+    z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot" id="supportDot"></span> NFC 卡片餘額</h1>
+</header>
+
+<main>
+
+  <!-- SCAN TAB -->
+  <section class="tabpage active" id="tab-scan">
+    <div class="scan-zone" id="scanZone">
+      <div class="nfc-icon" id="nfcIcon">
+        <div class="pulse"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 8a6 6 0 0 1 12 0M4 5a10 10 0 0 1 16 0" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <div class="scan-status" id="scanStatus">按下按鈕開始感應卡片</div>
+      <button class="btn" id="scanBtn">開始掃描</button>
+    </div>
+
+    <div class="unsupported" id="unsupportedBox" style="display:none;">
+      這台裝置 / 瀏覽器不支援 <code>Web NFC</code>。<br><br>
+      請使用 <b>Android 手機的 Chrome 瀏覽器</b>開啟本頁面,並確認:<br>
+      1. 網址是 <code>https://</code> 開頭(或 <code>localhost</code>)<br>
+      2. 手機設定中已開啟 NFC 功能
+    </div>
+
+    <div id="cardDetailWrap"></div>
+  </section>
+
+  <!-- LIST TAB -->
+  <section class="tabpage" id="tab-list">
+    <input class="search" id="searchInput" placeholder="搜尋卡片名稱或卡號...">
+    <div id="listWrap"></div>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section class="tabpage" id="tab-settings">
+    <div class="card-detail" style="margin-top:16px;">
+      <div class="cname">資料備份</div>
+      <p style="color:var(--text-dim);font-size:14px;">所有資料只存在這台手機的這個瀏覽器裡。建議定期匯出備份,避免清除瀏覽器資料時遺失。</p>
+      <div class="row-btns">
+        <button class="btn secondary" id="exportBtn">匯出備份 (JSON)</button>
+      </div>
+      <div class="row-btns">
+        <button class="btn secondary" id="importBtn">匯入備份</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+    </div>
+    <div class="card-detail">
+      <div class="cname" style="color:var(--red);">危險區域</div>
+      <button class="btn danger" id="wipeBtn">清除全部資料</button>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="active" data-tab="scan">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0M4 5a10 10 0 0 1 16 0" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+    掃描
+  </button>
+  <button data-tab="list">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4" stroke-linecap="round"/></svg>
+    卡片列表
+  </button>
+  <button data-tab="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    設定
+  </button>
+</nav>
+
+<!-- Top up / deduct modal -->
+<div class="overlay" id="txOverlay">
+  <div class="modal">
+    <h2 id="txTitle">儲值</h2>
+    <label>金額</label>
+    <input type="number" inputmode="numeric" id="txAmount" placeholder="輸入金額">
+    <div class="quick-amts">
+      <button data-amt="50">+50</button>
+      <button data-amt="100">+100</button>
+      <button data-amt="200">+200</button>
+      <button data-amt="500">+500</button>
+    </div>
+    <div class="row-btns">
+      <button class="btn secondary" id="txCancel">取消</button>
+      <button class="btn" id="txConfirm">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- New card modal -->
+<div class="overlay" id="newCardOverlay">
+  <div class="modal">
+    <h2>發現新卡片</h2>
+    <label>卡號</label>
+    <input type="text" id="newCardId" readonly>
+    <label>卡片名稱(選填)</label>
+    <input type="text" id="newCardName" placeholder="例如:小明的卡">
+    <label>初始餘額</label>
+    <input type="number" inputmode="numeric" id="newCardBalance" value="0">
+    <div class="row-btns">
+      <button class="btn secondary" id="newCardCancel">取消</button>
+      <button class="btn green" id="newCardConfirm">建立卡片</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename modal -->
+<div class="overlay" id="renameOverlay">
+  <div class="modal">
+    <h2>編輯卡片名稱</h2>
+    <input type="text" id="renameInput" placeholder="卡片名稱">
+    <div class="row-btns">
+      <button class="btn secondary" id="renameCancel">取消</button>
+      <button class="btn" id="renameConfirm">儲存</button>
+    </div>
+    <div class="row-btns">
+      <button class="btn danger" id="deleteCardBtn">刪除此卡片</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "nfc_balance_cards_v1";
+  var db = loadDB();
+  var currentCardId = null;
+  var reader = null;
+  var scanning = false;
+
+  function loadDB(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveDB(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  }
+  function fmtMoney(n){
+    return Number(n).toLocaleString('zh-TW');
+  }
+  function fmtTime(ts){
+    var d = new Date(ts);
+    return d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")+" "+
+           String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- Tabs ----------
+  var tabButtons = document.querySelectorAll("nav.tabbar button");
+  tabButtons.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabButtons.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
+      document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab === "list") renderList();
+    });
+  });
+
+  // ---------- Web NFC support check ----------
+  var supported = "NDEFReader" in window;
+  document.getElementById("supportDot").style.background = supported ? "#34d399" : "#f87171";
+  if(!supported){
+    document.getElementById("unsupportedBox").style.display = "block";
+    document.getElementById("scanBtn").disabled = true;
+    document.getElementById("scanStatus").textContent = "此瀏覽器不支援 Web NFC";
+  }
+
+  // ---------- Scan ----------
+  var scanBtn = document.getElementById("scanBtn");
+  var scanStatus = document.getElementById("scanStatus");
+  var scanZone = document.getElementById("scanZone");
+
+  scanBtn.addEventListener("click", async function(){
+    if(!supported) return;
+    if(scanning){
+      // already scanning, just wait for a tap
+      toast("請將卡片靠近手機背面");
+      return;
+    }
+    try{
+      reader = new NDEFReader();
+      scanBtn.textContent = "啟動中...";
+      scanBtn.disabled = true;
+      await reader.scan();
+      scanning = true;
+      scanZone.classList.add("scanning");
+      scanStatus.textContent = "感應中... 請將卡片靠近手機背面";
+      scanBtn.textContent = "掃描中";
+      scanBtn.disabled = false;
+
+      reader.onreading = function(event){
+        var serial = event.serialNumber || "";
+        if(!serial){
+          toast("讀取到卡片,但取不到卡號(不支援的卡片類型)");
+          return;
+        }
+        handleCardRead(serial.toUpperCase());
+      };
+      reader.onreadingerror = function(){
+        toast("讀取失敗,請重新感應卡片");
+      };
+    }catch(err){
+      scanning = false;
+      scanZone.classList.remove("scanning");
+      scanBtn.textContent = "開始掃描";
+      scanBtn.disabled = false;
+      if(err.name === "NotAllowedError"){
+        scanStatus.textContent = "已拒絕 NFC 權限,請重新整理頁面後允許權限";
+      }else{
+        scanStatus.textContent = "啟動失敗: " + err.message;
+      }
+      toast("NFC 啟動失敗: " + err.message);
+    }
+  });
+
+  function handleCardRead(cardId){
+    if(navigator.vibrate) navigator.vibrate(60);
+    if(db[cardId]){
+      currentCardId = cardId;
+      renderCardDetail(cardId);
+      toast("讀取到卡片");
+    }else{
+      openNewCardModal(cardId);
+    }
+  }
+
+  // ---------- Card detail render (on scan tab) ----------
+  function renderCardDetail(cardId){
+    var wrap = document.getElementById("cardDetailWrap");
+    var c = db[cardId];
+    if(!c){ wrap.innerHTML = ""; return; }
+    var txHtml = "";
+    var txs = (c.transactions || []).slice().reverse().slice(0, 20);
+    if(txs.length === 0){
+      txHtml = '<div class="empty">尚無交易紀錄</div>';
+    }else{
+      txHtml = txs.map(function(t){
+        var cls = t.amount >= 0 ? "plus" : "minus";
+        var sign = t.amount >= 0 ? "+" : "";
+        return '<div class="tx"><div><div>'+ (t.note||(t.amount>=0?"儲值":"扣款")) +'</div><div class="meta">'+fmtTime(t.ts)+'</div></div><div class="amt '+cls+'">'+sign+fmtMoney(t.amount)+'</div></div>';
+      }).join("");
+    }
+
+    wrap.innerHTML =
+      '<div class="card-detail">' +
+        '<div class="cid">'+cardId+'</div>' +
+        '<div class="cname" id="ddCardName">'+ (c.name || "未命名卡片") +' <span style="color:var(--accent);font-size:12px;cursor:pointer;" id="editNameLink">✎ 編輯</span></div>' +
+        '<div class="balance-big">'+fmtMoney(c.balance)+' <span>元</span></div>' +
+        '<div class="row-btns">' +
+          '<button class="btn green" id="topupBtn">儲值</button>' +
+          '<button class="btn danger" id="deductBtn">扣款</button>' +
+        '</div>' +
+        '<div class="history"><h3>交易紀錄</h3>'+txHtml+'</div>' +
+      '</div>';
+
+    document.getElementById("topupBtn").addEventListener("click", function(){ openTxModal(cardId, "topup"); });
+    document.getElementById("deductBtn").addEventListener("click", function(){ openTxModal(cardId, "deduct"); });
+    document.getElementById("editNameLink").addEventListener("click", function(){ openRenameModal(cardId); });
+  }
+
+  // ---------- New card modal ----------
+  var newCardOverlay = document.getElementById("newCardOverlay");
+  var pendingNewCardId = null;
+  function openNewCardModal(cardId){
+    pendingNewCardId = cardId;
+    document.getElementById("newCardId").value = cardId;
+    document.getElementById("newCardName").value = "";
+    document.getElementById("newCardBalance").value = "0";
+    newCardOverlay.classList.add("show");
+  }
+  document.getElementById("newCardCancel").addEventListener("click", function(){
+    newCardOverlay.classList.remove("show");
+  });
+  document.getElementById("newCardConfirm").addEventListener("click", function(){
+    var name = document.getElementById("newCardName").value.trim();
+    var bal = parseFloat(document.getElementById("newCardBalance").value) || 0;
+    db[pendingNewCardId] = {
+      id: pendingNewCardId,
+      name: name,
+      balance: bal,
+      createdAt: Date.now(),
+      transactions: bal !== 0 ? [{amount: bal, ts: Date.now(), note: "初始餘額"}] : []
+    };
+    saveDB();
+    newCardOverlay.classList.remove("show");
+    currentCardId = pendingNewCardId;
+    renderCardDetail(pendingNewCardId);
+    toast("已建立新卡片");
+  });
+
+  // ---------- Top up / deduct modal ----------
+  var txOverlay = document.getElementById("txOverlay");
+  var txMode = "topup";
+  var txCardId = null;
+  function openTxModal(cardId, mode){
+    txCardId = cardId; txMode = mode;
+    document.getElementById("txTitle").textContent = mode === "topup" ? "儲值" : "扣款";
+    document.getElementById("txAmount").value = "";
+    txOverlay.classList.add("show");
+    document.getElementById("txConfirm").className = mode === "topup" ? "btn green" : "btn danger";
+  }
+  document.getElementById("txCancel").addEventListener("click", function(){ txOverlay.classList.remove("show"); });
+  document.querySelectorAll(".quick-amts button").forEach(function(b){
+    b.addEventListener("click", function(){
+      document.getElementById("txAmount").value = b.dataset.amt;
+    });
+  });
+  document.getElementById("txConfirm").addEventListener("click", function(){
+    var amt = parseFloat(document.getElementById("txAmount").value);
+    if(!amt || amt <= 0){ toast("請輸入有效金額"); return; }
+    var c = db[txCardId];
+    if(!c) return;
+    if(txMode === "deduct" && c.balance < amt){
+      toast("餘額不足(目前 "+fmtMoney(c.balance)+" 元)");
+      return;
+    }
+    var delta = txMode === "topup" ? amt : -amt;
+    c.balance = Math.round((c.balance + delta) * 100) / 100;
+    c.transactions = c.transactions || [];
+    c.transactions.push({amount: delta, ts: Date.now(), note: txMode === "topup" ? "儲值" : "扣款"});
+    saveDB();
+    txOverlay.classList.remove("show");
+    renderCardDetail(txCardId);
+    renderList();
+    toast(txMode === "topup" ? "儲值成功" : "扣款成功");
+  });
+
+  // ---------- Rename / delete modal ----------
+  var renameOverlay = document.getElementById("renameOverlay");
+  var renameCardId = null;
+  function openRenameModal(cardId){
+    renameCardId = cardId;
+    document.getElementById("renameInput").value = db[cardId].name || "";
+    renameOverlay.classList.add("show");
+  }
+  document.getElementById("renameCancel").addEventListener("click", function(){ renameOverlay.classList.remove("show"); });
+  document.getElementById("renameConfirm").addEventListener("click", function(){
+    db[renameCardId].name = document.getElementById("renameInput").value.trim();
+    saveDB();
+    renameOverlay.classList.remove("show");
+    renderCardDetail(renameCardId);
+    renderList();
+    toast("已更新名稱");
+  });
+  document.getElementById("deleteCardBtn").addEventListener("click", function(){
+    if(!confirm("確定要刪除這張卡片與所有交易紀錄嗎?此動作無法復原。")) return;
+    delete db[renameCardId];
+    saveDB();
+    renameOverlay.classList.remove("show");
+    if(currentCardId === renameCardId){
+      currentCardId = null;
+      document.getElementById("cardDetailWrap").innerHTML = "";
+    }
+    renderList();
+    toast("已刪除卡片");
+  });
+
+  // ---------- List tab ----------
+  function renderList(){
+    var wrap = document.getElementById("listWrap");
+    var q = (document.getElementById("searchInput").value || "").trim().toLowerCase();
+    var ids = Object.keys(db).sort(function(a,b){
+      return (db[b].createdAt||0) - (db[a].createdAt||0);
+    });
+    if(q){
+      ids = ids.filter(function(id){
+        var c = db[id];
+        return id.toLowerCase().indexOf(q) >= 0 || (c.name||"").toLowerCase().indexOf(q) >= 0;
+      });
+    }
+    if(ids.length === 0){
+      wrap.innerHTML = '<div class="empty">尚無卡片,請先到「掃描」頁感應卡片建立</div>';
+      return;
+    }
+    wrap.innerHTML = ids.map(function(id){
+      var c = db[id];
+      return '<div class="card-item" data-id="'+id+'">' +
+        '<div class="l"><div class="name">'+(c.name||"未命名卡片")+'</div><div class="id">'+id+'</div></div>' +
+        '<div class="r">'+fmtMoney(c.balance)+'</div>' +
+      '</div>';
+    }).join("");
+    wrap.querySelectorAll(".card-item").forEach(function(el){
+      el.addEventListener("click", function(){
+        currentCardId = el.dataset.id;
+        // switch to scan tab to show detail
+        document.querySelectorAll("nav.tabbar button").forEach(function(b){ b.classList.remove("active"); });
+        document.querySelector('nav.tabbar button[data-tab="scan"]').classList.add("active");
+        document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
+        document.getElementById("tab-scan").classList.add("active");
+        renderCardDetail(currentCardId);
+      });
+    });
+  }
+  document.getElementById("searchInput").addEventListener("input", renderList);
+
+  // ---------- Settings: export / import / wipe ----------
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(db, null, 2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "nfc-balance-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("已匯出備份");
+  });
+  document.getElementById("importBtn").addEventListener("click", function(){
+    document.getElementById("importFile").click();
+  });
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      try{
+        var data = JSON.parse(fr.result);
+        if(typeof data !== "object") throw new Error("格式錯誤");
+        if(!confirm("匯入將會覆蓋目前所有資料,確定要繼續嗎?")) return;
+        db = data;
+        saveDB();
+        renderList();
+        toast("匯入成功");
+      }catch(err){
+        alert("匯入失敗: 檔案格式不正確");
+      }
+    };
+    fr.readAsText(file);
+    e.target.value = "";
+  });
+  document.getElementById("wipeBtn").addEventListener("click", function(){
+    if(!confirm("確定要清除所有卡片與交易資料嗎?此動作無法復原,建議先匯出備份。")) return;
+    db = {};
+    saveDB();
+    currentCardId = null;
+    document.getElementById("cardDetailWrap").innerHTML = "";
+    renderList();
+    toast("已清除所有資料");
+  });
+
+  renderList();
+})();
+</script>
+</body>
+</html>

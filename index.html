@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>迪達Pay</title>
+<script>
+  // URL-based interface switch only; this is not authentication.
+  document.documentElement.classList.toggle('admin-mode', new URLSearchParams(location.search).get('admin') === '1');
+</script>
 <style>
   :root{
     --bg:#F7F8FF;
@@ -233,6 +237,18 @@
     background:rgba(52,211,153,.12);color:var(--green);
     font-size:32px;margin:0 auto 14px;
   }
+  html:not(.admin-mode) body{padding-bottom:env(safe-area-inset-bottom);}
+  html:not(.admin-mode) .scan-zone{
+    min-height:calc(100vh - env(safe-area-inset-bottom));
+    min-height:calc(100dvh - env(safe-area-inset-bottom));
+  }
+  html:not(.admin-mode) nav.tabbar,
+  html:not(.admin-mode) #tab-list,
+  html:not(.admin-mode) #tab-manage,
+  html:not(.admin-mode) #tab-settings,
+  html:not(.admin-mode) #newCardOverlay,
+  html:not(.admin-mode) #txOverlay,
+  html:not(.admin-mode) #renameOverlay{display:none !important;}
 </style>
 </head>
 <body>
@@ -373,6 +389,7 @@
 <script>
 (function(){
   "use strict";
+  var isAdminMode = document.documentElement.classList.contains("admin-mode");
 
   var firebaseConfig = {
     apiKey: "AIzaSyBZlz-gwyoTEl0k8Hee7duCQWVSfgEfk00",
@@ -433,6 +450,7 @@
   var tabButtons = document.querySelectorAll("nav.tabbar button");
   tabButtons.forEach(function(btn){
     btn.addEventListener("click", function(){
+      if(!isAdminMode && btn.dataset.tab !== "scan") return;
       tabButtons.forEach(function(b){ b.classList.remove("active"); });
       btn.classList.add("active");
       document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
@@ -533,7 +551,7 @@
           '<button data-k="back" class="op">⌫</button>' +
         '</div>' +
         '<button class="btn danger" id="checkoutConfirmBtn" disabled>確認扣款</button>' +
-        '<div class="back-btn checkout-manage-link" id="checkoutManageLink">卡片管理(儲值 / 改名 / 紀錄)→</div>' +
+        (isAdminMode ? '<div class="back-btn checkout-manage-link" id="checkoutManageLink">卡片管理(儲值 / 改名 / 紀錄)→</div>' : '') +
       '</div>';
 
     bindCheckoutEvents(cardId);
@@ -585,7 +603,7 @@
     });
 
     document.getElementById("checkoutCancelBtn").addEventListener("click", cancelCheckout);
-    document.getElementById("checkoutManageLink").addEventListener("click", function(){ goToManage(cardId); });
+    if(isAdminMode) document.getElementById("checkoutManageLink").addEventListener("click", function(){ goToManage(cardId); });
 
     updateDisplay();
   }
@@ -611,6 +629,7 @@
   }
 
   function goToManage(cardId){
+    if(!isAdminMode) return;
     currentCardId = cardId;
     currentTabId = "manage";
     document.querySelectorAll("nav.tabbar button").forEach(function(b){ b.classList.remove("active"); });
@@ -667,6 +686,7 @@
   var newCardOverlay = document.getElementById("newCardOverlay");
   var pendingNewCardId = null;
   function openNewCardModal(cardId){
+    if(!isAdminMode){ toast("此卡片尚未建立，請洽管理人員"); return; }
     pendingNewCardId = cardId;
     document.getElementById("newCardId").value = cardId;
     document.getElementById("newCardName").value = "";

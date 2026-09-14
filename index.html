@@ -6,16 +6,16 @@
 <title>迪達Pay</title>
 <style>
   :root{
-    --bg:#181C38;          /* 深夜藍黑 */
-    --bg2:#232752;         /* 深靛灰 */
-    --card:#232752;        /* 深靛灰 */
-    --card-border:rgba(180,168,255,.45); /* 幻霧紫 tint */
-    --text:#FAF9FF;        /* 冷白 */
-    --text-dim:#BFBCE3;    /* 灰紫 */
-    --accent:#7C6FFF;      /* 骸式靛藍 Primary (brightened) */
-    --accent2:#B0A4FF;     /* 幻霧紫 Secondary (brightened) */
-    --green:#3EECAA;
-    --red:#FF4D6D;         /* 輪迴猩紅 Accent (brightened) */
+    --bg:#F7F8FF;
+    --bg2:#FFFFFF;
+    --card:#FFFFFF;
+    --card-border:#E2E3F1;
+    --text:#282541;
+    --text-dim:#6D6B85;
+    --accent:#6551DC;
+    --accent2:#8873EF;
+    --green:#138562;
+    --red:#D33457;
     --yellow:#FFD166;
     --bg-light:#F2F1F7;    /* 霧白 (reserved for a future light mode) */
   }
@@ -26,19 +26,24 @@
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC",sans-serif;
     min-height:100vh;
-    padding-bottom:76px;
+    padding-bottom:calc(80px + env(safe-area-inset-bottom));
   }
   header{
-    padding:20px 20px 12px;
+    height:72px;padding:0 clamp(20px,4vw,64px);
+    display:flex;align-items:center;justify-content:space-between;
     position:sticky; top:0; z-index:10;
-    background:linear-gradient(180deg,var(--bg) 70%, transparent);
+    background:rgba(247,248,255,.92);
+    backdrop-filter:blur(18px);
+    border-bottom:1px solid rgba(226,227,241,.65);
   }
   header h1{
     font-size:20px; margin:0; font-weight:700;
     display:flex; align-items:center; gap:8px;
   }
   header h1 .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
-  main{padding:0 16px; max-width:520px; margin:0 auto;}
+  .header-label{font-size:12px;color:var(--text-dim);letter-spacing:1px;}
+  main{padding:0 20px; margin:0 auto;}
+  .tabpage:not(#tab-scan),#checkoutWrap{max-width:600px;margin:0 auto;}
 
   .tabpage{display:none;}
   .tabpage.active{display:block;}
@@ -46,31 +51,38 @@
   /* ---- Scan tab ---- */
   #tab-scan{padding:0;}
   .scan-zone{
-    margin:0 -16px;
-    min-height:calc(100vh - 56px - 76px);
-    min-height:calc(100dvh - 56px - 76px);
+    margin:0 -20px;
+    min-height:calc(100vh - 152px - env(safe-area-inset-bottom));
+    min-height:calc(100dvh - 152px - env(safe-area-inset-bottom));
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    border-radius:0 0 36px 36px;
     background:
-      radial-gradient(circle at 50% 15%, rgba(176,164,255,.6) 0%, rgba(124,111,255,.45) 42%, var(--card) 80%);
-    border-bottom:1px solid var(--card-border);
-    padding:32px 24px calc(32px + env(safe-area-inset-bottom));
+      radial-gradient(ellipse at 12% 18%, #E2E0FF 0%, transparent 52%),
+      radial-gradient(ellipse at 90% 75%, #DCF5EE 0%, transparent 48%),
+      linear-gradient(145deg,#F5F2FF,#FAFBFF 65%,#EFF8FF);
+    padding:36px 24px;
     text-align:center;
-    box-shadow:0 20px 50px -20px rgba(124,111,255,.55);
   }
+  .scan-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;background:rgba(255,255,255,.8);border:1px solid #DDD9F5;border-radius:30px;color:var(--accent);font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:36px;}
+  .scan-eyebrow::before{content:"";width:6px;height:6px;background:var(--accent2);border-radius:50%;}
+  .scan-title{font-size:clamp(28px,4vw,40px);letter-spacing:-1px;margin:30px 0 10px;line-height:1.25;}
+  .scan-description{color:var(--text-dim);font-size:15px;line-height:1.8;margin:0 0 24px;}
+  #scanBtn{max-width:360px;min-height:56px;box-shadow:0 10px 24px rgba(101,81,220,.2);background:linear-gradient(110deg,#7864EB,#6551DC);}
+  .scan-hint{font-size:12px;color:var(--text-dim);margin:18px 0 0;}
+  #unsupportedBox{max-width:600px;margin:16px auto;}
   #tab-scan > *:not(.scan-zone){padding-left:16px;padding-right:16px;}
   .nfc-icon{
-    width:140px;height:140px;margin:0 auto 24px;
+    width:160px;height:160px;margin:0 auto;
     display:flex;align-items:center;justify-content:center;
-    border-radius:50%;
-    background:rgba(176,164,255,.24);
-    box-shadow:0 0 50px rgba(176,164,255,.4);
+    border-radius:42px;
+    background:linear-gradient(145deg,#FFFFFF,#EEEAFF);
+    border:1px solid #FFFFFF;
+    box-shadow:0 18px 45px rgba(109,91,190,.14),0 0 0 16px rgba(255,255,255,.35),0 0 0 32px rgba(255,255,255,.18);
     position:relative;
   }
-  .nfc-icon svg{width:68px;height:68px;color:var(--accent2);}
+  .nfc-icon svg{width:84px;height:84px;color:var(--accent);}
   .pulse{
     position:absolute;inset:0;border-radius:50%;
     border:2.5px solid var(--accent2);
@@ -81,18 +93,18 @@
     0%{opacity:.8;transform:scale(1);}
     100%{opacity:0;transform:scale(1.9);}
   }
-  .scan-status{font-size:16px;color:var(--text-dim);margin-bottom:24px;min-height:20px;}
+  .scan-status{font-size:14px;color:var(--accent);margin-bottom:18px;min-height:20px;max-width:440px;line-height:1.6;}
   .btn{
     appearance:none;border:none;cursor:pointer;
     font-size:16px;font-weight:600;
     padding:14px 20px;border-radius:14px;
-    background:var(--accent);color:var(--text);
+    background:var(--accent);color:#FFFFFF;
     width:100%;
   }
   .btn:active{transform:scale(.98);}
   .btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--card-border);}
-  .btn.danger{background:var(--red);color:var(--text);}
-  .btn.green{background:var(--green);color:#04240f;}
+  .btn.danger{background:var(--red);color:#FFFFFF;}
+  .btn.green{background:var(--green);color:#FFFFFF;}
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--card-border);}
   .btn:disabled{opacity:.5;}
   .row-btns{display:flex;gap:10px;margin-top:14px;}
@@ -101,7 +113,7 @@
   .unsupported{
     margin-top:14px;padding:14px 16px;border-radius:14px;
     background:rgba(184,50,74,.12);border:1px solid rgba(184,50,74,.35);
-    color:#f3c7d0;font-size:14px;line-height:1.6;
+    color:#A32D49;font-size:14px;line-height:1.6;
   }
   .unsupported code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;}
 
@@ -148,16 +160,28 @@
   /* ---- Bottom nav ---- */
   nav.tabbar{
     position:fixed;bottom:0;left:0;right:0;
-    display:flex;background:var(--bg2);
+    display:flex;justify-content:center;gap:8px;background:rgba(255,255,255,.95);backdrop-filter:blur(18px);
     border-top:1px solid var(--card-border);
     padding:8px 8px calc(8px + env(safe-area-inset-bottom));
     z-index:20;
   }
   nav.tabbar button{
-    flex:1;background:none;border:none;color:var(--text-dim);
+    flex:1;max-width:180px;background:none;border:none;color:var(--text-dim);cursor:pointer;border-radius:14px;min-height:56px;
     font-size:12px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:4px;
   }
-  nav.tabbar button.active{color:var(--accent);}
+  nav.tabbar button.active{color:var(--accent);background:#F0EDFF;font-weight:700;}
+  button,input{font-family:inherit;}
+  button:focus-visible,input:focus-visible,.back-btn:focus-visible{outline:3px solid var(--accent2);outline-offset:3px;}
+  .card-detail,.card-item{box-shadow:0 6px 22px rgba(45,35,95,.04);}
+  @media(max-height:740px){
+    .scan-zone{padding:26px 24px;}
+    .scan-eyebrow{margin-bottom:28px;}
+    .nfc-icon{width:116px;height:116px;border-radius:32px;}
+    .nfc-icon svg{width:68px;height:68px;}
+    .scan-title{margin-top:26px;}
+    .scan-description{margin-bottom:16px;}
+  }
+  @media(prefers-reduced-motion:reduce){.scanning .pulse{animation:none;} .btn:active{transform:none;}}
   nav.tabbar svg{width:22px;height:22px;}
 
   /* ---- Modal ---- */
@@ -229,6 +253,7 @@
 
 <header>
   <h1><span class="dot" id="supportDot"></span> 迪達Pay</h1>
+  <span class="header-label">輕觸卡片・輕鬆付款</span>
 </header>
 
 <main>
@@ -236,15 +261,19 @@
   <!-- SCAN TAB -->
   <section class="tabpage active" id="tab-scan">
     <div class="scan-zone" id="scanZone">
-      <div class="nfc-icon" id="nfcIcon">
+      <div class="scan-eyebrow">NFC 感應付款</div>
+      <div class="nfc-icon" id="nfcIcon" aria-hidden="true">
         <div class="pulse"></div>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 8a6 6 0 0 1 12 0M4 5a10 10 0 0 1 16 0" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
+          <rect x="4" y="3" width="13" height="18" rx="3" stroke-width="1.4"/>
+          <path d="M8 16h3M10 7a5 5 0 0 1 0 6M13 5a8 8 0 0 1 0 10M20 7a7 7 0 0 1 0 7" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="scan-status" id="scanStatus">雲端資料讀取中...</div>
+      <h2 class="scan-title">靠近一點，即刻感應</h2>
+      <p class="scan-description">將卡片靠近手機背面的感應區<br>讀取卡片後，即可輸入付款金額</p>
+      <div class="scan-status" id="scanStatus" role="status" aria-live="polite">雲端資料讀取中...</div>
       <button class="btn" id="scanBtn">開始掃描</button>
+      <p class="scan-hint">感應時請保持卡片貼近，直到讀取完成</p>
     </div>
 
     <div class="unsupported" id="unsupportedBox" style="display:none;">

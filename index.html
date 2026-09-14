@@ -6,17 +6,17 @@
 <title>迪達Pay</title>
 <style>
   :root{
-    --bg:#14172B;          /* 深夜藍黑 */
-    --bg2:#1E2140;         /* 深靛灰 */
-    --card:#1E2140;        /* 深靛灰 */
-    --card-border:rgba(154,140,255,.4); /* 幻霧紫 tint */
-    --text:#F5F4FF;        /* 冷白 */
-    --text-dim:#B4B1D6;    /* 灰紫 */
-    --accent:#6C63FF;      /* 骸式靛藍 Primary (brightened) */
-    --accent2:#9B8CFF;     /* 幻霧紫 Secondary (brightened) */
-    --green:#3EE8A8;
-    --red:#F0435F;         /* 輪迴猩紅 Accent (brightened) */
-    --yellow:#FFC93C;
+    --bg:#181C38;          /* 深夜藍黑 */
+    --bg2:#232752;         /* 深靛灰 */
+    --card:#232752;        /* 深靛灰 */
+    --card-border:rgba(180,168,255,.45); /* 幻霧紫 tint */
+    --text:#FAF9FF;        /* 冷白 */
+    --text-dim:#BFBCE3;    /* 灰紫 */
+    --accent:#7C6FFF;      /* 骸式靛藍 Primary (brightened) */
+    --accent2:#B0A4FF;     /* 幻霧紫 Secondary (brightened) */
+    --green:#3EECAA;
+    --red:#FF4D6D;         /* 輪迴猩紅 Accent (brightened) */
+    --yellow:#FFD166;
     --bg-light:#F2F1F7;    /* 霧白 (reserved for a future light mode) */
   }
   *{box-sizing:border-box;}
@@ -47,24 +47,30 @@
   #tab-scan{padding:0;}
   .scan-zone{
     margin:0 -16px;
+    min-height:calc(100vh - 56px - 76px);
+    min-height:calc(100dvh - 56px - 76px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
     border-radius:0 0 36px 36px;
     background:
-      radial-gradient(circle at 50% 0%, rgba(155,140,255,.55) 0%, rgba(108,99,255,.4) 40%, var(--card) 78%);
+      radial-gradient(circle at 50% 15%, rgba(176,164,255,.6) 0%, rgba(124,111,255,.45) 42%, var(--card) 80%);
     border-bottom:1px solid var(--card-border);
-    padding:56px 24px 44px;
+    padding:32px 24px calc(32px + env(safe-area-inset-bottom));
     text-align:center;
-    box-shadow:0 20px 50px -20px rgba(108,99,255,.5);
+    box-shadow:0 20px 50px -20px rgba(124,111,255,.55);
   }
   #tab-scan > *:not(.scan-zone){padding-left:16px;padding-right:16px;}
   .nfc-icon{
-    width:128px;height:128px;margin:0 auto 20px;
+    width:140px;height:140px;margin:0 auto 24px;
     display:flex;align-items:center;justify-content:center;
     border-radius:50%;
-    background:rgba(155,140,255,.22);
-    box-shadow:0 0 40px rgba(155,140,255,.35);
+    background:rgba(176,164,255,.24);
+    box-shadow:0 0 50px rgba(176,164,255,.4);
     position:relative;
   }
-  .nfc-icon svg{width:60px;height:60px;color:var(--accent2);}
+  .nfc-icon svg{width:68px;height:68px;color:var(--accent2);}
   .pulse{
     position:absolute;inset:0;border-radius:50%;
     border:2.5px solid var(--accent2);

@@ -179,6 +179,38 @@
     z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;
   }
   .toast.show{opacity:1;}
+
+  /* ---- Checkout (post-scan quick deduct) ---- */
+  .back-btn{
+    display:inline-flex;align-items:center;gap:4px;
+    color:var(--accent);font-size:14px;cursor:pointer;
+    margin-bottom:12px;
+  }
+  .checkout-card .cid{margin-top:0;}
+  .amount-display{
+    text-align:center;font-size:40px;font-weight:800;
+    margin:14px 0 4px;color:var(--text);
+  }
+  .amount-display .cur{font-size:16px;color:var(--text-dim);font-weight:500;margin-right:2px;}
+  .preview-balance{text-align:center;color:var(--text-dim);font-size:14px;margin-bottom:16px;}
+  .preview-balance.insufficient{color:var(--red);font-weight:600;}
+  .keypad{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    margin-bottom:16px;
+  }
+  .keypad button{
+    background:var(--card);border:1px solid var(--card-border);color:var(--text);
+    font-size:22px;font-weight:600;padding:18px 0;border-radius:14px;
+  }
+  .keypad button:active{background:var(--card-border);}
+  .keypad button.op{color:var(--text-dim);font-size:18px;}
+  .checkout-manage-link{text-align:center;justify-content:center;margin:16px 0 0;}
+  .checkout-success{text-align:center;padding:26px 0;}
+  .checkout-success .big-check{
+    width:64px;height:64px;line-height:64px;border-radius:50%;
+    background:rgba(52,211,153,.12);color:var(--green);
+    font-size:32px;margin:0 auto 14px;
+  }
 </style>
 </head>
 <body>
@@ -210,7 +242,13 @@
       2. 手機設定中已開啟 NFC 功能
     </div>
 
-    <div id="cardDetailWrap"></div>
+    <div id="checkoutWrap"></div>
+  </section>
+
+  <!-- MANAGE TAB (rename / top up / history / delete — reached from card list) -->
+  <section class="tabpage" id="tab-manage">
+    <div class="back-btn" id="manageBackBtn">← 返回卡片列表</div>
+    <div id="manageWrap"></div>
   </section>
 
   <!-- LIST TAB -->
@@ -415,17 +453,133 @@
   function handleCardRead(cardId){
     if(navigator.vibrate) navigator.vibrate(60);
     if(db[cardId]){
-      currentCardId = cardId;
-      renderCardDetail(cardId);
+      renderCheckout(cardId);
       toast("讀取到卡片");
     }else{
       openNewCardModal(cardId);
     }
   }
 
-  // ---------- Card detail render (on scan tab) ----------
-  function renderCardDetail(cardId){
-    var wrap = document.getElementById("cardDetailWrap");
+  // ---------- Checkout screen (on scan tab): balance + numeric keypad ----------
+  var checkoutAmount = "";
+
+  function renderCheckout(cardId){
+    var wrap = document.getElementById("checkoutWrap");
+    var c = db[cardId];
+    if(!c){ wrap.innerHTML = ""; return; }
+    checkoutAmount = "";
+    scanZone.style.display = "none";
+    wrap.innerHTML =
+      '<div class="card-detail checkout-card">' +
+        '<div class="back-btn" id="checkoutCancelBtn">← 取消 / 重新感應</div>' +
+        '<div class="cid">'+cardId+'</div>' +
+        '<div class="cname">'+ (c.name || "未命名卡片") +'</div>' +
+        '<div class="balance-big">'+fmtMoney(c.balance)+' <span>元</span></div>' +
+        '<div class="amount-display" id="checkoutAmountDisplay"><span class="cur">扣款 $</span>0</div>' +
+        '<div class="preview-balance" id="checkoutPreview">請輸入扣款金額</div>' +
+        '<div class="keypad" id="checkoutKeypad">' +
+          [1,2,3,4,5,6,7,8,9].map(function(n){ return '<button data-k="'+n+'">'+n+'</button>'; }).join("") +
+          '<button data-k="C" class="op">C</button>' +
+          '<button data-k="0">0</button>' +
+          '<button data-k="back" class="op">⌫</button>' +
+        '</div>' +
+        '<button class="btn danger" id="checkoutConfirmBtn" disabled>確認扣款</button>' +
+        '<div class="back-btn checkout-manage-link" id="checkoutManageLink">卡片管理(儲值 / 改名 / 紀錄)→</div>' +
+      '</div>';
+
+    bindCheckoutEvents(cardId);
+  }
+
+  function bindCheckoutEvents(cardId){
+    var c = db[cardId];
+    var display = document.getElementById("checkoutAmountDisplay");
+    var preview = document.getElementById("checkoutPreview");
+    var confirmBtn = document.getElementById("checkoutConfirmBtn");
+
+    function updateDisplay(){
+      var amt = parseInt(checkoutAmount || "0", 10);
+      display.innerHTML = '<span class="cur">扣款 $</span>' + (checkoutAmount || "0");
+      if(amt <= 0){
+        preview.textContent = "請輸入扣款金額";
+        preview.classList.remove("insufficient");
+        confirmBtn.disabled = true;
+      }else if(amt > c.balance){
+        preview.textContent = "餘額不足(目前 "+fmtMoney(c.balance)+" 元)";
+        preview.classList.add("insufficient");
+        confirmBtn.disabled = true;
+      }else{
+        preview.textContent = "扣款後餘額 "+fmtMoney(c.balance - amt)+" 元";
+        preview.classList.remove("insufficient");
+        confirmBtn.disabled = false;
+      }
+    }
+
+    document.getElementById("checkoutKeypad").addEventListener("click", function(e){
+      var btn = e.target.closest("button");
+      if(!btn) return;
+      var k = btn.dataset.k;
+      if(k === "C"){ checkoutAmount = ""; }
+      else if(k === "back"){ checkoutAmount = checkoutAmount.slice(0, -1); }
+      else if(checkoutAmount.length < 7){ checkoutAmount = checkoutAmount === "0" ? k : checkoutAmount + k; }
+      updateDisplay();
+    });
+
+    confirmBtn.addEventListener("click", function(){
+      var amt = parseInt(checkoutAmount || "0", 10);
+      if(!amt || amt <= 0 || amt > c.balance) return;
+      c.balance = Math.round((c.balance - amt) * 100) / 100;
+      c.transactions = c.transactions || [];
+      c.transactions.push({amount: -amt, ts: Date.now(), note: "扣款"});
+      saveDB();
+      if(navigator.vibrate) navigator.vibrate([40, 60, 40]);
+      showCheckoutSuccess(cardId, amt);
+    });
+
+    document.getElementById("checkoutCancelBtn").addEventListener("click", cancelCheckout);
+    document.getElementById("checkoutManageLink").addEventListener("click", function(){ goToManage(cardId); });
+
+    updateDisplay();
+  }
+
+  function showCheckoutSuccess(cardId, amt){
+    var c = db[cardId];
+    document.getElementById("checkoutWrap").innerHTML =
+      '<div class="card-detail checkout-card">' +
+        '<div class="checkout-success">' +
+          '<div class="big-check">✓</div>' +
+          '<div style="font-size:18px;font-weight:700;">扣款成功 −'+fmtMoney(amt)+' 元</div>' +
+          '<div style="color:var(--text-dim);margin-top:6px;">剩餘餘額 '+fmtMoney(c.balance)+' 元</div>' +
+        '</div>' +
+      '</div>';
+    toast("扣款成功");
+    setTimeout(cancelCheckout, 1600);
+  }
+
+  function cancelCheckout(){
+    document.getElementById("checkoutWrap").innerHTML = "";
+    scanZone.style.display = "";
+    checkoutAmount = "";
+  }
+
+  function goToManage(cardId){
+    currentCardId = cardId;
+    document.querySelectorAll("nav.tabbar button").forEach(function(b){ b.classList.remove("active"); });
+    document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
+    document.getElementById("tab-manage").classList.add("active");
+    renderManageDetail(cardId);
+  }
+
+  document.getElementById("manageBackBtn").addEventListener("click", function(){
+    document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
+    document.getElementById("tab-list").classList.add("active");
+    document.querySelectorAll("nav.tabbar button").forEach(function(b){ b.classList.remove("active"); });
+    document.querySelector('nav.tabbar button[data-tab="list"]').classList.add("active");
+    renderList();
+  });
+
+  // ---------- Manage screen (from card list): rename / top up / deduct / history ----------
+  function renderManageDetail(cardId){
+    var wrap = document.getElementById("manageWrap");
     var c = db[cardId];
     if(!c){ wrap.innerHTML = ""; return; }
     var txHtml = "";
@@ -482,8 +636,7 @@
     };
     saveDB();
     newCardOverlay.classList.remove("show");
-    currentCardId = pendingNewCardId;
-    renderCardDetail(pendingNewCardId);
+    renderCheckout(pendingNewCardId);
     toast("已建立新卡片");
   });
 
@@ -519,7 +672,7 @@
     c.transactions.push({amount: delta, ts: Date.now(), note: txMode === "topup" ? "儲值" : "扣款"});
     saveDB();
     txOverlay.classList.remove("show");
-    renderCardDetail(txCardId);
+    renderManageDetail(txCardId);
     renderList();
     toast(txMode === "topup" ? "儲值成功" : "扣款成功");
   });
@@ -537,7 +690,7 @@
     db[renameCardId].name = document.getElementById("renameInput").value.trim();
     saveDB();
     renameOverlay.classList.remove("show");
-    renderCardDetail(renameCardId);
+    renderManageDetail(renameCardId);
     renderList();
     toast("已更新名稱");
   });
@@ -546,10 +699,11 @@
     delete db[renameCardId];
     saveDB();
     renameOverlay.classList.remove("show");
-    if(currentCardId === renameCardId){
-      currentCardId = null;
-      document.getElementById("cardDetailWrap").innerHTML = "";
-    }
+    currentCardId = null;
+    document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
+    document.getElementById("tab-list").classList.add("active");
+    document.querySelectorAll("nav.tabbar button").forEach(function(b){ b.classList.remove("active"); });
+    document.querySelector('nav.tabbar button[data-tab="list"]').classList.add("active");
     renderList();
     toast("已刪除卡片");
   });
@@ -580,13 +734,7 @@
     }).join("");
     wrap.querySelectorAll(".card-item").forEach(function(el){
       el.addEventListener("click", function(){
-        currentCardId = el.dataset.id;
-        // switch to scan tab to show detail
-        document.querySelectorAll("nav.tabbar button").forEach(function(b){ b.classList.remove("active"); });
-        document.querySelector('nav.tabbar button[data-tab="scan"]').classList.add("active");
-        document.querySelectorAll(".tabpage").forEach(function(p){ p.classList.remove("active"); });
-        document.getElementById("tab-scan").classList.add("active");
-        renderCardDetail(currentCardId);
+        goToManage(el.dataset.id);
       });
     });
   }
@@ -633,7 +781,8 @@
     db = {};
     saveDB();
     currentCardId = null;
-    document.getElementById("cardDetailWrap").innerHTML = "";
+    cancelCheckout();
+    document.getElementById("manageWrap").innerHTML = "";
     renderList();
     toast("已清除所有資料");
   });

@@ -175,6 +175,12 @@
     .scan-title{margin-top:26px;}
     .scan-description{margin-bottom:16px;}
   }
+  .balance-mode .scan-eyebrow{margin-bottom:14px;}
+  .balance-mode .scan-title{margin:0 0 14px;}
+  .balance-mode .readonly-balance{padding:20px;margin-bottom:12px;}
+  .balance-mode .readonly-balance .balance-big{margin-top:6px;}
+  .balance-mode .scan-status{margin-bottom:0;}
+  .balance-mode .scan-hint{margin-top:10px;max-width:380px;line-height:1.6;}
   @media(prefers-reduced-motion:reduce){.scanning .pulse{animation:none;} .btn:active{transform:none;}}
   nav.tabbar svg{display:block;flex-shrink:0;width:22px;height:22px;}
 
@@ -476,6 +482,7 @@
 
   // ---------- Web NFC support check ----------
   if(!supported){
+    document.getElementById("scanZone").classList.add("balance-mode");
     document.querySelector(".scan-eyebrow").textContent = "迪達Pay ・ 餘額查詢";
     document.querySelector(".scan-title").textContent = "腿腿餘額";
     document.querySelector(".scan-description").remove();

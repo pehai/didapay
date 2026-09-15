@@ -61,6 +61,10 @@
   .scan-description{color:var(--text-dim);font-size:15px;line-height:1.8;margin:0 0 24px;}
   #scanBtn{max-width:360px;min-height:56px;box-shadow:0 10px 24px rgba(101,81,220,.2);background:linear-gradient(110deg,#7864EB,#6551DC);}
   .scan-hint{font-size:12px;color:var(--text-dim);margin:18px 0 0;}
+  .readonly-balance{width:100%;max-width:380px;margin:0 0 20px;padding:28px 20px;background:rgba(255,255,255,.85);border:1px solid white;border-radius:24px;box-shadow:0 12px 36px rgba(101,81,220,.08);}
+  .readonly-balance[hidden]{display:none;}
+  .readonly-balance .balance-big{font-size:clamp(44px,10vw,64px);margin:12px 0 0;overflow-wrap:anywhere;}
+  #balanceCardName{color:var(--text-dim);font-size:14px;overflow-wrap:anywhere;}
   #unsupportedBox{max-width:600px;margin:16px auto;}
   #tab-scan > *:not(.scan-zone){padding-left:16px;padding-right:16px;}
   .nfc-icon{
@@ -268,6 +272,10 @@
       </div>
       <h2 class="scan-title">感應卡片，使用迪達Pay!</h2>
       <p class="scan-description">將卡片靠近手機背面的感應區<br>讀取卡片後，即可輸入付款金額</p>
+      <div class="readonly-balance" id="balanceView" hidden aria-live="polite" aria-atomic="true">
+        <div id="balanceCardName">卡片餘額</div>
+        <div class="balance-big"><span>NT$</span> <strong id="readonlyBalance">—</strong></div>
+      </div>
       <div class="scan-status" id="scanStatus" role="status" aria-live="polite">雲端資料讀取中...</div>
       <button class="btn" id="scanBtn">開始掃描</button>
       <p class="scan-hint">感應時請保持卡片貼近，直到讀取完成</p>
@@ -390,6 +398,8 @@
 (function(){
   "use strict";
   var isAdminMode = document.documentElement.classList.contains("admin-mode");
+  var supported = "NDEFReader" in window;
+  var balanceLoadFailed = false;
 
   var firebaseConfig = {
     apiKey: "AIzaSyBZlz-gwyoTEl0k8Hee7duCQWVSfgEfk00",
@@ -418,12 +428,16 @@
     var wasReady = dbReady;
     db = snapshot.val() || {};
     dbReady = true;
+    balanceLoadFailed = false;
     onRemoteUpdate(wasReady);
   }, function(err){
+    balanceLoadFailed = true;
+    if(!supported) renderReadOnlyBalance();
     toast("雲端連線失敗: " + err.message);
   });
 
   function onRemoteUpdate(wasReady){
+    if(!supported) renderReadOnlyBalance();
     if(!wasReady){
       if(supported){ scanStatus.textContent = "按下按鈕開始感應卡片"; }
     }
@@ -461,11 +475,37 @@
   });
 
   // ---------- Web NFC support check ----------
-  var supported = "NDEFReader" in window;
   if(!supported){
-    document.getElementById("unsupportedBox").style.display = "block";
+    document.querySelector(".scan-eyebrow").textContent = "迪達Pay ・ 餘額查詢";
+    document.querySelector(".scan-title").textContent = "卡片餘額";
+    document.querySelector(".scan-description").textContent = "不需感應，直接查看目前餘額";
+    document.querySelector(".scan-hint").textContent = "此裝置僅提供餘額查詢，付款請使用支援 NFC 的裝置";
+    document.getElementById("nfcIcon").hidden = true;
+    document.getElementById("nfcIcon").style.display = "none";
+    document.getElementById("scanBtn").style.display = "none";
     document.getElementById("scanBtn").disabled = true;
-    document.getElementById("scanStatus").textContent = "此瀏覽器不支援 Web NFC";
+    document.getElementById("balanceView").hidden = false;
+    renderReadOnlyBalance();
+  }
+
+  function renderReadOnlyBalance(){
+    var name = document.getElementById("balanceCardName");
+    var amount = document.getElementById("readonlyBalance");
+    var status = document.getElementById("scanStatus");
+    amount.textContent = "—";
+    name.textContent = "卡片餘額";
+    if(balanceLoadFailed){ status.textContent = "餘額讀取失敗，請重新整理再試"; return; }
+    if(!dbReady){ status.textContent = "正在讀取卡片餘額…"; return; }
+    var card = db[Object.keys(db).sort()[0]];
+    if(!card){ status.textContent = "尚未建立卡片，請洽管理人員"; return; }
+    name.textContent = card.name || "迪達Pay 卡片";
+    var balance = card.balance;
+    if(typeof balance !== "number" || !Number.isFinite(balance)){
+      status.textContent = "餘額資料異常，請洽管理人員";
+      return;
+    }
+    amount.textContent = fmtMoney(balance);
+    status.textContent = "餘額會隨雲端資料自動更新";
   }
 
   // ---------- Scan ----------

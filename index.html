@@ -65,6 +65,12 @@
   .readonly-balance[hidden]{display:none;}
   .readonly-balance .balance-big{font-size:clamp(44px,10vw,64px);margin:12px 0 0;overflow-wrap:anywhere;}
   #balanceCardName{color:var(--text-dim);font-size:14px;overflow-wrap:anywhere;}
+  .usage-guide{width:100%;max-width:380px;text-align:left;background:rgba(255,255,255,.85);border:1px solid white;border-radius:24px;padding:22px;margin-bottom:16px;}
+  .usage-guide ol{margin:0;padding-left:22px;color:var(--text-dim);font-size:14px;line-height:1.8;}
+  .usage-guide li+li{margin-top:14px;}
+  .usage-guide strong{display:block;color:var(--text);font-size:15px;}
+  #queryToggleBtn{max-width:380px;}
+  [hidden]{display:none !important;}
   #unsupportedBox{max-width:600px;margin:16px auto;}
   #tab-scan > *:not(.scan-zone){padding-left:16px;padding-right:16px;}
   .nfc-icon{
@@ -282,7 +288,15 @@
         <div id="balanceCardName">腿腿餘額</div>
         <div class="balance-big"><span>NT$</span> <strong id="readonlyBalance">—</strong></div>
       </div>
+      <div class="usage-guide" id="usageGuide" hidden>
+        <ol>
+          <li><strong>查看腿腿餘額</strong>按下「查看餘額」，就能查看這張卡目前的餘額，不需要感應卡片。</li>
+          <li><strong>感應卡片付款</strong>付款時，在支援 NFC 的裝置開啟感應頁，按「開始掃描」，將卡片靠近手機背面。</li>
+          <li><strong>確認扣款</strong>讀取卡片後，輸入金額並確認扣款。查詢頁的餘額會自動更新。</li>
+        </ol>
+      </div>
       <div class="scan-status" id="scanStatus" role="status" aria-live="polite">雲端資料讀取中...</div>
+      <button class="btn" id="queryToggleBtn" hidden>查看餘額</button>
       <button class="btn" id="scanBtn">開始掃描</button>
       <p class="scan-hint">感應時請保持卡片貼近，直到讀取完成</p>
     </div>
@@ -405,6 +419,7 @@
   "use strict";
   var isAdminMode = document.documentElement.classList.contains("admin-mode");
   var supported = "NDEFReader" in window;
+  var isScanPage = isAdminMode || new URLSearchParams(location.search).get("scan") === "1";
   var balanceLoadFailed = false;
 
   var firebaseConfig = {
@@ -438,14 +453,14 @@
     onRemoteUpdate(wasReady);
   }, function(err){
     balanceLoadFailed = true;
-    if(!supported) renderReadOnlyBalance();
+    if(!isScanPage) renderReadOnlyBalance();
     toast("雲端連線失敗: " + err.message);
   });
 
   function onRemoteUpdate(wasReady){
-    if(!supported) renderReadOnlyBalance();
+    if(!isScanPage) renderReadOnlyBalance();
     if(!wasReady){
-      if(supported){ scanStatus.textContent = "按下按鈕開始感應卡片"; }
+      if(isScanPage && supported){ document.getElementById("scanStatus").textContent = "按下按鈕開始感應卡片"; }
     }
     if(currentTabId === "list") renderList();
     else if(currentTabId === "manage" && currentCardId) renderManageDetail(currentCardId);
@@ -481,18 +496,33 @@
   });
 
   // ---------- Web NFC support check ----------
-  if(!supported){
+  if(!isScanPage){
     document.getElementById("scanZone").classList.add("balance-mode");
     document.querySelector(".scan-eyebrow").textContent = "迪達Pay ・ 餘額查詢";
-    document.querySelector(".scan-title").textContent = "腿腿餘額";
+    document.querySelector(".scan-title").textContent = "使用說明";
     document.querySelector(".scan-description").remove();
-    document.querySelector(".scan-hint").textContent = "此裝置僅提供餘額查詢，付款請使用支援 NFC 的裝置";
+    document.querySelector(".scan-hint").textContent = "付款請使用感應頁面，並以支援 NFC 的裝置操作";
     document.getElementById("nfcIcon").hidden = true;
     document.getElementById("nfcIcon").style.display = "none";
     document.getElementById("scanBtn").style.display = "none";
     document.getElementById("scanBtn").disabled = true;
-    document.getElementById("balanceView").hidden = false;
+    document.getElementById("usageGuide").hidden = false;
+    document.getElementById("scanStatus").hidden = true;
+    document.getElementById("queryToggleBtn").hidden = false;
+    document.getElementById("queryToggleBtn").addEventListener("click", function(){
+      var showBalance = document.getElementById("balanceView").hidden;
+      document.getElementById("balanceView").hidden = !showBalance;
+      document.getElementById("usageGuide").hidden = showBalance;
+      document.getElementById("scanStatus").hidden = !showBalance;
+      document.querySelector(".scan-title").textContent = showBalance ? "腿腿餘額" : "使用說明";
+      this.textContent = showBalance ? "返回使用說明" : "查看餘額";
+      renderReadOnlyBalance();
+    });
     renderReadOnlyBalance();
+  }else if(!supported){
+    document.getElementById("unsupportedBox").style.display = "block";
+    document.getElementById("scanBtn").disabled = true;
+    document.getElementById("scanStatus").textContent = "此裝置不支援 NFC 感應，請使用支援的裝置";
   }
 
   function renderReadOnlyBalance(){
@@ -521,7 +551,7 @@
   var scanZone = document.getElementById("scanZone");
 
   scanBtn.addEventListener("click", async function(){
-    if(!supported) return;
+    if(!isScanPage || !supported) return;
     if(!dbReady){ toast("雲端資料讀取中,請稍候再試"); return; }
     if(scanning){
       // already scanning, just wait for a tap

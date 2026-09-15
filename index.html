@@ -273,7 +273,7 @@
       <h2 class="scan-title">感應卡片，使用迪達Pay!</h2>
       <p class="scan-description">將卡片靠近手機背面的感應區<br>讀取卡片後，即可輸入付款金額</p>
       <div class="readonly-balance" id="balanceView" hidden aria-live="polite" aria-atomic="true">
-        <div id="balanceCardName">卡片餘額</div>
+        <div id="balanceCardName">腿腿餘額</div>
         <div class="balance-big"><span>NT$</span> <strong id="readonlyBalance">—</strong></div>
       </div>
       <div class="scan-status" id="scanStatus" role="status" aria-live="polite">雲端資料讀取中...</div>
@@ -477,8 +477,8 @@
   // ---------- Web NFC support check ----------
   if(!supported){
     document.querySelector(".scan-eyebrow").textContent = "迪達Pay ・ 餘額查詢";
-    document.querySelector(".scan-title").textContent = "卡片餘額";
-    document.querySelector(".scan-description").textContent = "不需感應，直接查看目前餘額";
+    document.querySelector(".scan-title").textContent = "腿腿餘額";
+    document.querySelector(".scan-description").remove();
     document.querySelector(".scan-hint").textContent = "此裝置僅提供餘額查詢，付款請使用支援 NFC 的裝置";
     document.getElementById("nfcIcon").hidden = true;
     document.getElementById("nfcIcon").style.display = "none";
@@ -493,9 +493,9 @@
     var amount = document.getElementById("readonlyBalance");
     var status = document.getElementById("scanStatus");
     amount.textContent = "—";
-    name.textContent = "卡片餘額";
+    name.textContent = "腿腿餘額";
     if(balanceLoadFailed){ status.textContent = "餘額讀取失敗，請重新整理再試"; return; }
-    if(!dbReady){ status.textContent = "正在讀取卡片餘額…"; return; }
+    if(!dbReady){ status.textContent = "正在讀取腿腿餘額…"; return; }
     var card = db[Object.keys(db).sort()[0]];
     if(!card){ status.textContent = "尚未建立卡片，請洽管理人員"; return; }
     name.textContent = card.name || "迪達Pay 卡片";

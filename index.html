@@ -290,9 +290,9 @@
       </div>
       <div class="usage-guide" id="usageGuide" hidden>
         <ol>
-          <li><strong>查看腿腿餘額</strong>按下「查看餘額」，就能查看這張卡目前的餘額，不需要感應卡片。</li>
-          <li><strong>感應卡片付款</strong>付款時，在支援 NFC 的裝置開啟感應頁，按「開始掃描」，將卡片靠近手機背面。</li>
-          <li><strong>確認扣款</strong>讀取卡片後，輸入金額並確認扣款。查詢頁的餘額會自動更新。</li>
+          <li><strong>腿腿生日快樂！！！</strong>恭喜最可愛的腿腿23歲生日快樂！</li>
+          <li><strong>最好的腿腿</strong>這是迪達陪腿腿的第二次生日！腿腿一樣還是最好的腿腿捏！迪達也還是最愛腿腿！迪達也不知道還要說什麼了 嘿嘿，反正腿腿都聽膩了吧哇呦！反正就是迪達迪達最腿腿！！！</li>
+          <li><strong>摁下面的摁扭！</strong>腿腿現在可以按下下面的按鈕看迪達送給腿腿的禮物還剩多少！</li>
         </ol>
       </div>
       <div class="scan-status" id="scanStatus" role="status" aria-live="polite">雲端資料讀取中...</div>
@@ -499,7 +499,7 @@
   if(!isScanPage){
     document.getElementById("scanZone").classList.add("balance-mode");
     document.querySelector(".scan-eyebrow").textContent = "迪達Pay ・ 餘額查詢";
-    document.querySelector(".scan-title").textContent = "使用說明";
+    document.querySelector(".scan-title").textContent = "使用說明！";
     document.querySelector(".scan-description").remove();
     document.querySelector(".scan-hint").textContent = "付款請使用感應頁面，並以支援 NFC 的裝置操作";
     document.getElementById("nfcIcon").hidden = true;
@@ -514,7 +514,7 @@
       document.getElementById("balanceView").hidden = !showBalance;
       document.getElementById("usageGuide").hidden = showBalance;
       document.getElementById("scanStatus").hidden = !showBalance;
-      document.querySelector(".scan-title").textContent = showBalance ? "腿腿餘額" : "使用說明";
+      document.querySelector(".scan-title").textContent = showBalance ? "腿腿餘額" : "使用說明！";
       this.textContent = showBalance ? "返回使用說明" : "查看餘額";
       renderReadOnlyBalance();
     });

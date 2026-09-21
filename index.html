@@ -57,6 +57,9 @@
   }
   .scan-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;background:rgba(255,255,255,.8);border:1px solid #DDD9F5;border-radius:30px;color:var(--accent);font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:36px;}
   .scan-eyebrow::before{content:"";width:6px;height:6px;background:var(--accent2);border-radius:50%;}
+  .query-brand{margin:0 0 12px;font-size:clamp(34px,7vw,46px);font-weight:800;line-height:1.2;letter-spacing:-1.5px;color:var(--text);}
+  .query-brand span{color:var(--accent);letter-spacing:-2px;}
+  .query-brand::after{content:"";display:block;width:32px;height:4px;margin:12px auto 0;border-radius:4px;background:linear-gradient(90deg,#8873EF,#B8ABFA);}
   .scan-title{font-size:clamp(28px,4vw,40px);letter-spacing:-1px;margin:30px 0 10px;line-height:1.25;}
   .scan-description{color:var(--text-dim);font-size:15px;line-height:1.8;margin:0 0 24px;}
   #scanBtn{max-width:360px;min-height:56px;box-shadow:0 10px 24px rgba(101,81,220,.2);background:linear-gradient(110deg,#7864EB,#6551DC);}
@@ -183,7 +186,7 @@
     .scan-description{margin-bottom:16px;}
   }
   .balance-mode .scan-eyebrow{margin-bottom:14px;}
-  .balance-mode .scan-title{margin:0 0 14px;}
+  .balance-mode .scan-title{margin:0 0 14px;font-size:clamp(24px,5vw,28px);letter-spacing:-.5px;}
   .balance-mode .readonly-balance{padding:20px;margin-bottom:12px;}
   .balance-mode .readonly-balance .balance-big{margin-top:6px;}
   .balance-mode .scan-status{margin-bottom:0;}
@@ -275,6 +278,7 @@
   <!-- SCAN TAB -->
   <section class="tabpage active" id="tab-scan">
     <div class="scan-zone" id="scanZone">
+      <h1 class="query-brand" id="queryBrand" hidden>迪達<span>Pay</span></h1>
       <div class="scan-eyebrow">NFC 感應付款</div>
       <div class="nfc-icon" id="nfcIcon" aria-hidden="true">
         <div class="pulse"></div>
@@ -499,7 +503,8 @@
   // ---------- Web NFC support check ----------
   if(!isScanPage){
     document.getElementById("scanZone").classList.add("balance-mode");
-    document.querySelector(".scan-eyebrow").textContent = "迪達Pay ・ 餘額查詢";
+    document.getElementById("queryBrand").hidden = false;
+    document.querySelector(".scan-eyebrow").textContent = "餘額查詢";
     document.querySelector(".scan-title").textContent = "使用說明！";
     document.querySelector(".scan-description").remove();
     document.querySelector(".scan-hint").remove();

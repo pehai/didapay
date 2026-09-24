@@ -540,11 +540,11 @@
     if(balanceLoadFailed){ status.textContent = "餘額讀取失敗，請重新整理再試"; return; }
     if(!dbReady){ status.textContent = "正在讀取腿腿餘額…"; return; }
     var card = db[Object.keys(db).sort()[0]];
-    if(!card){ status.textContent = "尚未建立卡片，請洽管理人員"; return; }
+    if(!card){ status.textContent = "尚未建立卡片，請洽迪達"; return; }
     name.textContent = card.name || "迪達Pay 卡片";
     var balance = card.balance;
     if(typeof balance !== "number" || !Number.isFinite(balance)){
-      status.textContent = "餘額資料異常，請洽管理人員";
+      status.textContent = "餘額資料異常，請洽迪達";
       return;
     }
     amount.textContent = fmtMoney(balance);
@@ -769,7 +769,7 @@
   var newCardOverlay = document.getElementById("newCardOverlay");
   var pendingNewCardId = null;
   function openNewCardModal(cardId){
-    if(!isAdminMode){ toast("此卡片尚未建立，請洽管理人員"); return; }
+    if(!isAdminMode){ toast("此卡片尚未建立，請洽迪達"); return; }
     pendingNewCardId = cardId;
     document.getElementById("newCardId").value = cardId;
     document.getElementById("newCardName").value = "";
